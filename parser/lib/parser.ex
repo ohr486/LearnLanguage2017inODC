@@ -59,4 +59,85 @@ defmodule Parser do
       end
     )
   end
+
+  def _comb(p1, p2) do
+    _map(
+      _seq(p1, _rep(_seq(p2, p1))),
+      fn values ->
+        {h, t} = values
+        List.foldl(
+          t,
+          h,
+          fn(r, a) ->
+            {f, e} = r
+            f.(a, e)
+          end
+        )
+      end
+    )
+  end
+
+  def _block(b) do
+    &(
+      (b.()).(&1)
+    )
+  end
+
+  # --- test ---
+
+  def e do
+    _block(
+      fn -> a end
+    )
+  end
+
+  def a do
+    _block(fn ->
+      _comb(
+        m,
+        _or(
+          _map(_str("+"), fn _ -> &(&1 + &2) end),
+          _map(_str("-"), fn _ ->  &(&1 - &2) end)
+        )
+      )
+    end)
+  end
+
+  def m do
+    _block(fn ->
+      _comb(
+        p,
+        _or(
+          _map(_str("*"), fn _ -> &(&1 * &2) end),
+          _map(_str("/"), fn _ -> &(div(&1, &2)) end)
+        )
+      )
+    end)
+  end
+
+  def p do
+    _block(
+      fn ->
+        _or(
+          _map(
+            _str("(")
+            |> _seq(e)
+            |> _seq(_str(")")),
+            fn result ->
+              {{"(", v}, ")"} = result
+              v
+            end
+          ),
+          n
+        )
+      end
+    )
+  end
+
+  def n do
+    _map(_reg(~r/[0-9]+/), fn v1 ->
+      {v2, _} = Integer.parse(v1)
+      v2
+    end)
+  end
 end
