@@ -1,5 +1,5 @@
 defmodule Parser do
-  def _str(prefix) do
+  def str(prefix) do
     &(
       case String.starts_with?(&1, prefix) do
         true ->
@@ -19,7 +19,7 @@ defmodule Parser do
     )
   end
 
-  def _seq(p1, p2) do
+  def seq(p1, p2) do
     &(
       with {:ok, h1, t1} <- p1.(&1),
            {:ok, h2, t2} <- p2.(t1),
@@ -27,16 +27,16 @@ defmodule Parser do
     )
   end
 
-  def _loop(p, rest, results) do
+  def loop(p, rest, results) do
     case p.(rest) do
-      {:ok, v, next} -> _loop(p, next, [v | results])
+      {:ok, v, next} -> loop(p, next, [v | results])
       {:error, next} -> {:ok, Enum.reverse(results), next}
     end
   end
 
-  def _rep(p), do: &_loop(p, &1, [])
+  def rep(p), do: &loop(p, &1, [])
 
-  def _map(p, f) do
+  def map(p, f) do
     &(
       case p.(&1) do
         {:ok, v, next} -> {:ok, f.(v), next}
@@ -45,7 +45,7 @@ defmodule Parser do
     )
   end
 
-  def _reg(pat) do
+  def reg(pat) do
     &(
       case Regex.run(pat, &1, return: :index) do
         nil -> {:error, &1}
@@ -60,9 +60,9 @@ defmodule Parser do
     )
   end
 
-  def _comb(p1, p2) do
-    _map(
-      _seq(p1, _rep(_seq(p2, p1))),
+  def comb(p1, p2) do
+    map(
+      seq(p1, rep(seq(p2, p1))),
       fn values ->
         {h, t} = values
         List.foldl(
@@ -77,5 +77,5 @@ defmodule Parser do
     )
   end
 
-  def _block(b), do: &(b.()).(&1)
+  def block(b), do: &(b.()).(&1)
 end
