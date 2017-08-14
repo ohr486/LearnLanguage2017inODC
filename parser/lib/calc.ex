@@ -2,18 +2,14 @@ defmodule Calc do
   import Parser
   alias Parser, as: P
 
-  def eval(str), do: e.(str)
+  def eval(str), do: ev.(str)
 
-  def e do
-    P._block(
-      fn -> a end
-    )
-  end
+  def ev, do: P._block(&add/0)
 
-  def a do
+  def add do
     P._block(fn ->
       P._comb(
-        m,
+        mult,
         P._or(
           P._map(P._str("+"), fn _ -> &(&1 + &2) end),
           P._map(P._str("-"), fn _ ->  &(&1 - &2) end)
@@ -22,10 +18,10 @@ defmodule Calc do
     end)
   end
 
-  def m do
+  def mult do
     P._block(fn ->
       P._comb(
-        p,
+        par,
         P._or(
           P._map(P._str("*"), fn _ -> &(&1 * &2) end),
           P._map(P._str("/"), fn _ -> &(div(&1, &2)) end)
@@ -34,29 +30,20 @@ defmodule Calc do
     end)
   end
 
-  def p do
-    P._block(
-      fn ->
-        P._or(
-          P._map(
-            P._str("(")
-            |> P._seq(e)
-            |> P._seq(P._str(")")),
-            fn result ->
-              {{"(", v}, ")"} = result
-              v
-            end
-          ),
-          n
-        )
-      end
-    )
-  end
-
-  def n do
-    P._map(P._reg(~r/[0-9]+/), fn v1 ->
-      {v2, _} = Integer.parse(v1)
-      v2
+  def par do
+    P._block(fn ->
+      P._or(
+        P._map(
+          P._str("(") |> P._seq(ev) |> P._seq(P._str(")")),
+          fn result ->
+            {{"(", v}, ")"} = result
+            v
+          end
+        ),
+        num
+      )
     end)
   end
+
+  def num, do: ~r/[0-9]+/ |> P._reg |> P._map(&(&1 |> Integer.parse |> elem(0)))
 end
