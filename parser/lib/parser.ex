@@ -4,6 +4,13 @@ defmodule Parser do
   @type parser          :: (State.t() -> State.t)
   @type previous_parser :: parser | nil
 
+  defmacro __using__(opts \\ []) do
+    quote do
+      import Parser.Base
+      import Parser.Text
+    end
+  end
+
   @spec parse(any, parser, Keyword.t) :: [term] | Keyword.t | {:error, term}
   def parse(input, parser, options \\ []) do
     case parser.(%State{input: input}) do
