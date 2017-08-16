@@ -70,4 +70,24 @@ defmodule Parser.Base do
     end
   end
   defp do_pipe(_parsers, %State{} = state, acc), do: {:error, acc, state}
+
+
+
+  @spec map(previous_parser, parser, transform) :: parser
+  defparser map(%State{status: :ok} = state, parser, transform) do
+    case parser.(state) do
+      %State{status: :ok, results: [h|rest]} = s ->
+        case transform.(h) do
+          {:error, reason} -> %{s | :status => :error, :error => reason}
+          result -> %{s | :results => [result|rest]}
+        end
+    s -> s
+  end
+end
+
+
+
+
+
+
 end
