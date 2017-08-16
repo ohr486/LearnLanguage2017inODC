@@ -45,6 +45,47 @@ defmodule Parser.Text do
   end
 
 
+  @spec integer(previous_parser) :: parser
+  defparser integer(%State{status: :ok} = state), do: fixed_integer(-1).(state)
+
+
+
+  @spec fixed_integer(previous_parser, -1 | pos_integer) :: parser
+  defparser fixed_integer(%State{status: :ok, column: col, input: <<c::utf8,rest::binary>> = input, results: results} = state, size)
+    when c in @digits do
+      case extract_integer(rest, <<c::utf8>>, size - 1) do
+        {:error, :eof} ->
+          %{state | :status => :error, :error => "Expected #{size}-digit integer, but hit end of input."}
+        {:error, :badmatch, remaining} ->
+          %{state | :status => :error, :error => "Expected #{size}-digit integer, but found only #{size-remaining} digits."}
+        {:ok, int_str} ->
+          int  = :erlang.binary_to_integer(int_str)
+          int_len = :erlang.byte_size(int_str)
+          rest = binary_part(input, int_len, :erlang.byte_size(input) - int_len)
+          %{state | :column => col + int_len, :input => rest, results: [int|results]}
+      end
+  end
+  defp fixed_integer_impl(%State{status: :ok, line: line, column: col, input: <<c::utf8,_::binary>>} = state, _size) do
+    %{state | :status => :error, :error => "Expected integer but found `#{<<c::utf8>>}` at line #{line}, column #{col + 1}"}
+  end
+  defp fixed_integer_impl(%State{status: :ok, input: <<>>} = state, _size) do
+    %{state | :status => :error, :error => "Expected integer, but hit end of input."}
+  end
+  defp extract_integer(<<>>, acc, 0), do: {:ok, acc}
+  defp extract_integer(<<>>, acc, size) when size < 0, do: {:ok, acc}
+  defp extract_integer(<<>>, _acc, _size), do: {:error, :eof}
+  defp extract_integer(_input, acc, 0), do: {:ok, acc}
+  defp extract_integer(<<c::utf8,rest::binary>>, acc, size) when c in @digits and size > 0 do
+    extract_integer(rest, <<acc::binary,c::utf8>>, size - 1)
+  end
+  defp extract_integer(<<c::utf8,rest::binary>>, acc, size) when c in @digits and size < 0 do
+    extract_integer(rest, <<acc::binary,c::utf8>>, size)
+  end
+  defp extract_integer(_, acc, 0), do: {:ok, acc}
+  defp extract_integer(_, _, size) when size > 0, do: {:error, :badmatch, size}
+  defp extract_integer(_, acc, _), do: {:ok, acc}
+
+
 
   @spec char() :: parser
   def char() do

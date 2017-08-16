@@ -24,6 +24,17 @@ defmodule Parser.Base do
   end
 
 
+  @spec label(previous_parser, parser, String.t) :: parser
+  defparser label(%State{status: :ok} = state, parser, name) when is_function(parser, 1) do
+    case parser.(state) do
+      %State{status: :ok, labels: labels} = s -> %{s | labels: [name | labels]}
+      %State{line: line, column: col} = s ->
+        %{s | :error => "Expected `#{name}` at line #{line}, column #{col + 1}."}
+    end
+  end
+
+
+
   @spec sequence(previous_parser, [parser]) :: parser
   defparser sequence(%State{status: :ok} = state, parsers) when is_list(parsers) do
     pipe(parsers, &(&1)).(state)
