@@ -46,7 +46,7 @@ defmodule Helper do
         end
       end
       defp unquote(impl_name)(%Parser.State{status: :error} = state, unquote_splicing(other_args)), do: state
-      defp quote(call) do
+      defp unquote(call) do
         unquote(body)
       end
     end

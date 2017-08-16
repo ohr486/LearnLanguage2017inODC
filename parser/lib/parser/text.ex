@@ -17,18 +17,15 @@ defmodule Parser.Text do
   @spec char(parser | String.t | pos_integer) :: parser
   @spec char(previous_parser, String.t | pos_integer) :: parser
   def char(c) when is_integer(c) do
-    IO.puts "--- def: int c#{inspect c}"
     fn state -> char_impl(state, c) end
   end
   def char(parser) when is_function(parser, 1) do
-    IO.puts "--- def: func c#{inspect parser}"
     fn
       %State{status: :ok} = state -> any_char_impl(state)
       %State{} = state -> state
     end
   end
   defparser char(%State{status: :ok, column: col, input: <<c::utf8,rest::binary>>, results: results} = state, <<c::utf8>>) do
-    IO.puts "--- defparser: c:#{inspect c}"
     %{state | :column => col + 1, :input => rest, :results => [<<c::utf8>>|results]}
   end
   defp char_impl(%State{status: :ok, column: col, input: <<c::utf8,rest::binary>>, results: results} = state, c) when is_integer(c) do
@@ -43,9 +40,6 @@ defmodule Parser.Text do
     end
   end
   defp char_impl(%State{status: :ok, line: line, column: col, input: <<next::utf8,_::binary>>} = state, c) do
-    IO.puts "--- char_impl ---"
-    IO.puts "line:#{inspect line}, col:#{inspect col}, c:#{inspect c}, state:#{inspect state}"
-    IO.inspect is_binary(c)
     case c do
       c when is_binary(c) ->
         %{state | :status => :error, :error => "Expected bin:`#{c}`, but found `#{<<next::utf8>>}` at line #{line}, column #{col + 1}."}
