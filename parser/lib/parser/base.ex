@@ -81,13 +81,22 @@ defmodule Parser.Base do
           {:error, reason} -> %{s | :status => :error, :error => reason}
           result -> %{s | :results => [result|rest]}
         end
-    s -> s
+      s -> s
+    end
   end
-end
 
 
 
-
-
-
+  @spec either(previous_parser, parser, parser) :: parser
+  defparser either(%State{status: :ok} = state, parser1, parser2) do
+    case parser1.(state) do
+      %State{status: :ok} = s1 -> s1
+      %State{error: error1} ->
+        case parser2.(state) do
+          %State{status: :ok} = s2 -> s2
+          %State{error: error2} ->
+            %{state | :status => :error, :error => "#{error1}, or: #{error2}"}
+        end
+    end
+  end
 end

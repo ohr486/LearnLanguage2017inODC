@@ -136,6 +136,41 @@ defmodule Parser.Text do
 
 
 
+  @spec word(previous_parser) :: parser
+  def word(parser \\ nil), do: word_of(parser, ~r/\w+/)
+
+
+
+  @spec word_of(previous_parser, Regex.t) :: parser
+  defparser word_of(%State{status: :ok, line: line, column: col, input: input, results: results} = state, pattern) do
+    source = case Regex.source(pattern) do
+      <<?^, _::binary>> = source ->
+        cond do
+          String.ends_with?(source, "+") -> source
+          :else -> <<source::binary, ?+>>
+        end
+      source ->
+        cond do
+          String.ends_with?(source, "+") -> <<?^, source::binary>>
+          :else -> <<?^, source::binary, ?+>>
+        end
+    end
+    ropts = Regex.opts(pattern)
+    case Regex.run(Regex.compile!(source, ropts), input, capture: :first) do
+      nil ->
+        %{state | :status => :error, :error => "Expected word of #{source} at line #{line}, column #{col + 1}"}
+      [word] ->
+        len  = :erlang.byte_size(word)
+        rest = binary_part(input, len, :erlang.byte_size(input) - len)
+        %{state | :column => col + len, :input => rest, results: [word|results]}
+    end
+  end
+  defp word_of_impl(%State{status: :ok} = state, _pattern) do
+    %{state | :status => :error, :error => "Expected word, but hit end of input."}
+  end
+
+
+
   @spec take_while(previous_parser, (char -> boolean)) :: parser
   defparser take_while(%State{status: :ok} = state, predicate) when is_function(predicate, 1) do
     take_while_loop(state, predicate, [])
