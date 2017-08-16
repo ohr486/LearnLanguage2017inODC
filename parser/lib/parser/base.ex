@@ -22,4 +22,36 @@ defmodule Parser.Base do
       %State{} = s -> s
     end
   end
+
+
+  @spec sequence(previous_parser, [parser]) :: parser
+  defparser sequence(%State{status: :ok} = state, parsers) when is_list(parsers) do
+    pipe(parsers, &(&1)).(state)
+  end
+
+
+
+  @spec pipe(previous_parser, [parser], transform) :: parser
+  defparser pipe(%State{status: :ok} = state, parsers, transform) when is_list(parsers) and is_function(transform, 1) do
+    orig_results = state.results
+    case do_pipe(parsers, %{state | :results => []}) do
+      {:ok, acc, %State{status: :ok} = new_state} ->
+        transformed = transform.(Enum.reverse(acc))
+        %{new_state | :results => [transformed | orig_results]}
+      {:error, _acc, state} ->
+        state
+    end
+  end
+  defp do_pipe(parsers, state), do: do_pipe(parsers, state, [])
+  defp do_pipe([], state, acc), do: {:ok, acc, state}
+  defp do_pipe([parser|parsers], %State{status: :ok} = current, acc) do
+    case parser.(%{current | :results => []}) do
+      %State{status: :ok, results: [:__ignore]} = next -> do_pipe(parsers, %{next | :results => []}, acc)
+      %State{status: :ok, results: []} = next -> do_pipe(parsers, next, acc)
+      %State{status: :ok, results: rs} = next -> do_pipe(parsers, %{next | :results => []}, rs ++ acc)
+      %State{} = next -> {:error, acc, next}
+    end
+  end
+  defp do_pipe(_parsers, %State{} = state, acc), do: {:error, acc, state}
+
 end
