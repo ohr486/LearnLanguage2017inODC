@@ -78,5 +78,5 @@ defmodule Parser do
     )
   end
 
-  def eval(b), do: &(b.()).(&1)
+  def eval(exp), do: &(exp.()).(&1)
 end
