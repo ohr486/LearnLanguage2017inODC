@@ -1,14 +1,19 @@
-defmodule Fib2 do
+defmodule FastFib do
   @moduledoc """
     フィボナッチ数を計算
     メモ化して高速化
+
+    Example
+      iex> FastFib.fib(10)
+      55
   """
 
+  @doc "フィボナッチ数を保存するAgentプロセスを起動"
   def start_link do
-    # フィボナッチ数を保存するAgentプロセスを起動
     Agent.start_link(fn -> %{0 => 0, 1 => 1} end, name: __MODULE__)
   end
 
+  @doc nil
   def calc(n) do
     case Agent.get(__MODULE__, &Map.get(&1, n)) do
       nil ->

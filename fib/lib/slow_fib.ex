@@ -1,4 +1,4 @@
-defmodule Fib1 do
+defmodule SlowFib do
   @moduledoc """
     フィボナッチ数を計算
     非効率な実装
