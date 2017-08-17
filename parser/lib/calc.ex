@@ -2,51 +2,48 @@ defmodule Calc do
   alias Parser, as: P
 
   def number do
-    P._or(
+    new_parser = P._or(
       P.str("0"),
-      P.reg(~r/[0-9][0-9]*/)
+      P.reg(~r/[1-9][0-9]*/)
     )
-    |> P.map(&(Integer.parse(&1) |> elem(0)))
+    P.map(new_parser, &(Integer.parse(&1) |> elem(0)))
   end
 
   def primary do
-    P.block(fn ->
-      P._or(
-        P.map(
-          P.str("(") |> P.seq(expression()) |> P.seq(P.str(")")),
-          fn result ->
-            {{"(", v}, ")"} = result
-            v
-          end
-        ),
-        number()
-      )
-    end)
+    new_parser = P._or(
+      P.map(
+        P.str("(") |> P.seq(expression()) |> P.seq(P.str(")")),
+        fn result ->
+          {{"(", v}, ")"} = result
+          v
+        end
+      ),
+      number()
+    )
+    P.eval(fn -> new_parser end)
   end
 
   def multitive do
-    P.block(fn ->
-      new_parser = P.comb(
-        primary(),
-        P._or(
-          P.map(P.str("*"), fn _ -> &(&1 * &2) end),
-          P.map(P.str("/"), fn _ -> &(div(&1, &2)) end)
-        )
+    new_parser = P.comb(
+      primary(),
+      P._or(
+        P.map(P.str("*"), fn _ -> &(&1 * &2) end),
+        P.map(P.str("/"), fn _ -> &(div(&1, &2)) end)
       )
-    end)
+    )
+    P.eval(fn -> new_parser end)
   end
 
   def additive do
-    P.block(fn ->
-      new_parser = P.comb(
-        multitive(),
-        P._or(
-          P.map(P.str("+"), fn _ -> &(&1 + &2) end),
-          P.map(P.str("-"), fn _ -> &(&1 - &2) end)
-        )
+    new_parser = P.comb(
+      multitive(),
+      P._or(
+        P.map(P.str("+"), fn _ -> &(&1 + &2) end),
+        P.map(P.str("-"), fn _ -> &(&1 - &2) end)
       )
-    end)
+    )
+    P.eval(fn -> new_parser end)
   end
 
-  def expression, do: P.block(&additive/0)
+  def expression, do: P.eval(fn -> additive() end)
 end

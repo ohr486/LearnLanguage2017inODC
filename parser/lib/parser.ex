@@ -78,5 +78,5 @@ defmodule Parser do
     )
   end
 
-  def block(b), do: &(b.()).(&1)
+  def eval(b), do: &(b.()).(&1)
 end
