@@ -1,12 +1,15 @@
 defmodule Calc do
+  @moduledoc """
+  四則演算を行うモジュール
+  """
 
   @doc """
   引数文字列をパースして四則演算結果を返す
 
   # Example
-     iex> import #{__MODULE__}
-     ...> eval("1+2+3")
-     6
+      iex> import #{__MODULE__}
+      ...> eval("1+2+3")
+      6
   """
   def eval(exp_str) do
     case expression().(exp_str) do
@@ -17,6 +20,7 @@ defmodule Calc do
 
   @doc """
   引数文字列が四則演算かどうか判定する関数
+
   BNF: expression ::= additive
 
   # Example
@@ -32,6 +36,7 @@ defmodule Calc do
 
   @doc """
   引数文字列が加算減算か判定する関数
+
   BNF: additive ::= multitive ('+' multitive | '-' multitive)*
 
   # Example
@@ -42,17 +47,27 @@ defmodule Calc do
       {:ok, 7, ""}
   """
   def additive do
-    Base.comb(
+    Base.seq(
       multitive(),
-      Base.either(
-        Base.one_of("+") |> Base.map(fn _ -> &(&1 + &2) end),
-        Base.one_of("-") |> Base.map(fn _ -> &(&1 - &2) end)
+      Base.loop(
+        Base.either(
+          Base.seq(
+            Base.one_of("+") |> Base.map(fn _ -> &(&1 + &2) end),
+            multitive()
+          ),
+          Base.seq(
+            Base.one_of("-") |> Base.map(fn _ -> &(&1 - &2) end),
+            multitive()
+          )
+        )
       )
     )
+    |> fold_result
   end
 
   @doc """
   引数文字列が掛算除算か判定する関数
+
   BNF: multitive ::= primary ('*' primary | '/' multitive)*
 
   # Example
@@ -63,17 +78,46 @@ defmodule Calc do
       {:ok, 2, "+3"}
   """
   def multitive do
-    Base.comb(
+    Base.seq(
       primary(),
-      Base.either(
-        Base.one_of("*") |> Base.map(fn _ -> &(&1 * &2) end),
-        Base.one_of("/") |> Base.map(fn _ -> &(div(&1, &2)) end)
+      Base.loop(
+        Base.either(
+          Base.seq(
+            Base.one_of("*") |> Base.map(fn _ -> &(&1 * &2) end),
+            primary()
+          ),
+          Base.seq(
+            Base.one_of("/") |> Base.map(fn _ -> &(div(&1, &2)) end),
+            primary()
+          )
+        )
       )
+    )
+    |> fold_result
+  end
+
+  @doc """
+  パースした結果を畳み込む
+  """
+  defp fold_result(p) do
+    Base.map(
+      p,
+      fn values ->
+        {h, t} = values
+        List.foldl(
+          t, h,
+          fn r, a ->
+            {f, e} = r
+            f.(a, e)
+          end
+        )
+      end
     )
   end
 
   @doc """
   引数文字列が四則演算の基本要素(整数かカッコで式をくくったもの)か判定する関数
+
   BNF: primary ::= '(' expression ')' | number
 
   # Example
@@ -103,6 +147,7 @@ defmodule Calc do
 
   @doc """
   引数文字列が整数かどうか判定する関数
+
   BNF: number::= '0' | [1-9][0-9]*
 
   # Example

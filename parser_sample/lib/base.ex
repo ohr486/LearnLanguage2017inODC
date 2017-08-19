@@ -110,14 +110,14 @@ defmodule Base do
   引数のパーサーを失敗するまで繰り返し適用する関数
 
   # Example
-     iex> import #{__MODULE__}
-     ...> p1 = one_of("a")
-     ...> loop(p1).("aabbcc")
-     {:ok, ["a", "a"], "bbcc"}
-     ...> p2 = one_of("b")
-     ...> p3 = either(p1, p2)
-     ...> loop(p3).("abbaaacba")
-     {:ok, ["a", "b", "b", "a", "a", "a"], "cba"}
+      iex> import #{__MODULE__}
+      ...> p1 = one_of("a")
+      ...> loop(p1).("aabbcc")
+      {:ok, ["a", "a"], "bbcc"}
+      ...> p2 = one_of("b")
+      ...> p3 = either(p1, p2)
+      ...> loop(p3).("abbaaacba")
+      {:ok, ["a", "b", "b", "a", "a", "a"], "cba"}
   """
   def loop(p) do
     fn input ->
@@ -141,26 +141,5 @@ defmodule Base do
         any -> any
       end
     end
-  end
-
-  @doc """
-  パーサーコンビネーター
-
-  # Example
-  """
-  def comb(p1, p2) do
-    map(
-      seq(p1, loop(seq(p2, p1))),
-      fn values ->
-        {h, t} = values
-        List.foldl(
-          t, h,
-          fn r, a ->
-            {f, e} = r
-            f.(a, e)
-          end
-        )
-      end
-    )
   end
 end
