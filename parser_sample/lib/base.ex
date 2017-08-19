@@ -106,6 +106,19 @@ defmodule Base do
     end
   end
 
+  @doc """
+  引数のパーサーを失敗するまで繰り返し適用する関数
+
+  # Example
+     iex> import #{__MODULE__}
+     ...> p1 = one_of("a")
+     ...> loop(p1).("aabbcc")
+     {:ok, ["a", "a"], "bbcc"}
+     ...> p2 = one_of("b")
+     ...> p3 = either(p1, p2)
+     ...> loop(p3).("abbaaacba")
+     {:ok, ["a", "b", "b", "a", "a", "a"], "cba"}
+  """
   def loop(p) do
     fn input ->
       rep(p, input, [])
