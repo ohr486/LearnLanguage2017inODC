@@ -4,7 +4,9 @@ defmodule FastFib do
     メモ化して高速化
 
     Example
-      iex> FastFib.fib(10)
+      iex> FastFib.start_link
+      {:ok, #PID<x.x.x>}
+      ...> FastFib.calc(10)
       55
   """
 
