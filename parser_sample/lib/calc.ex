@@ -154,12 +154,8 @@ defmodule Calc do
       iex> import #{__MODULE__}
       ...> number().("123")
       {:ok, 123, ""}
-
-      iex> import #{__MODULE__}
       ...> number().("abc")
       {:error, "abc"}
-
-      iex> import #{__MODULE__}
       ...> number().("123abc")
       {:ok, 123, "abc"}
   """
